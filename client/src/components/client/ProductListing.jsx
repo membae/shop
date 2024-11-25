@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useState,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppContext } from "../../AppContextProvider";
 
@@ -6,6 +6,8 @@ const ProductListing = () => {
     const [searchWord,setSearchWord]=useState("") //state to manage search bar content
     const [categoryWord,setCategoryWord]=useState("")//state to manage category dropdown
     const [searchPrice,setSearchPrice]=useState(0)
+    const [balance, setBalance] = useState(""); // state to hold balance
+    const [earnings, setEarnings] = useState(""); // state to hold earnings
     const navigate=useNavigate()
     
     const value=useContext(AppContext)
@@ -16,6 +18,29 @@ const ProductListing = () => {
     (searchPrice===0 || searchPrice>=product.selling_price)
     )
     const addToCartFn=value.cartManageFn
+
+    useEffect(() => {
+      // Get user ID from localStorage
+      const userId = localStorage.getItem("userId");
+      
+      
+
+      if (userId) {
+          const fetchUserDetails = async () => {
+              try {
+                  const response = await fetch(`http://127.0.0.1:5000/user/${userId}`); // Use the dynamic user ID
+                  const data = await response.json();
+                  setBalance(data.balance); // Set balance from the response
+                  setEarnings(data.earnings); // Set earnings from the response
+              } catch (error) {
+                  console.error("Error fetching user details:", error);
+              }
+          };
+          fetchUserDetails();
+      } else {
+          console.log("No user found in localStorage");
+      }
+  }, []);
   return (
     <div className="flex h-screen">
   {/* Sidebar for filters (visible on large screens) */}
@@ -23,6 +48,7 @@ const ProductListing = () => {
     <div className="bg-gray-200 p-4 rounded-lg">
       <h2 className="text-xl font-semibold mb-4">Filters</h2>
       {/* Add filter options here */}
+      
       <div className="mb-4">
         <h3 className="font-medium">Color</h3>
         <ul className="space-y-2">
@@ -58,8 +84,13 @@ const ProductListing = () => {
   <div className="flex-1 p-4 flex flex-col">
     {/* Sticky Top Bar: Search and Category Filter */}
     <div className="sticky top-0 bg-white z-10 p-4 shadow-md">
+    <div>
+    <h1>balance:{balance}</h1>
+    <h1>Earnings:{earnings}</h1>
+    </div>
       <div className="flex justify-between items-center">
         {/* Search Bar */}
+        
         <div className="w-1/2">
           <input
             type="text"
@@ -82,6 +113,7 @@ const ProductListing = () => {
             ))}
           </select>
         </div>
+        
       </div>
     </div>
 

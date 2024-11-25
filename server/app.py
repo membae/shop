@@ -101,7 +101,7 @@ class Login(Resource):
 api.add_resource(Login,'/login')
 
 class User_By_Id(Resource):
-    @jwt_required()
+    # @jwt_required()
     def get(self,id):
         user=User.query.filter_by(id=id).first()
         if user:

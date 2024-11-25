@@ -20,7 +20,7 @@ const Navbar = () => {
         <div className="flex items-center h-16 justify-between">
 
         <div className="lg:text-2xl sm:text-xl font-bold text-white absolute lg:left-8 sm:left-0" onClick={()=>{navigate('/')}}>
-            Gizmo-galaxy
+            Amazon
           </div>
 
           {localStorage.getItem('userId')&&value.userData.role==="Client"&&
