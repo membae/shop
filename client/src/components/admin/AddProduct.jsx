@@ -20,7 +20,8 @@ const AddProduct = () => {
   const [sellingPriceExclTax, setSellingPriceExclTax] = useState("");
   const [sellingPriceInclTax, setSellingPriceInclTax] = useState("");
   const [openingStock, setOpeningStock] = useState(0);
-  const [taxMultiplier,setTaxMultiplier]=useState(null)
+  const [taxMultiplier,setTaxMultiplier]=useState(null);
+  const [discount, setDiscount] = useState(0)
 
   const navigate=useNavigate()
   // Handler for adding a new feature
@@ -46,7 +47,8 @@ const AddProduct = () => {
         "purchase_price":purchasePriceInclTax,
         "selling_price":sellingPriceInclTax,
         "quantity":openingStock,
-        "tax_id":taxCategory
+        "tax_id":taxCategory,
+        "discount": discount,
     }
     formData.append("product_data",JSON.stringify(productData)) //appends the product data as json format so we have a single fetch
     Swal.fire({
@@ -246,6 +248,16 @@ const AddProduct = () => {
             placeholder="Enter product description"
             required
           ></textarea>
+        </div>
+        <div className="mb-6">
+          <label className="block font-semibold mb-2">Discount (%)</label>
+          <input
+            type="number"
+            value={discount}
+            onChange={(e) => setDiscount(e.target.value)}
+            className="w-full p-2 border rounded-md"
+            placeholder="Enter discount percentage"
+          />
         </div>
         <div className="flex-1">
           <label className="block font-semibold mb-2">Product Image</label>

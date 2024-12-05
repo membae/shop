@@ -193,56 +193,80 @@ class Add_Get_Product(Resource):
     
     @jwt_required()
     def post(self):
-        # product data contains files and json data
-        files=request.files.getlist('file') #gets all the files from the data that have a key of 'file'
-        product_data=request.form.get('product_data') #gets data saved under the key 'product_data'
-        if product_data and len(files)>0:
-            data=json.loads(product_data)
-            if all(item in data for item in ["name",'description','category_id','purchase_price','selling_price','features']): #ensure that required data is not missing
-                product=Product.query.filter_by(name=data.get("name")).first()
+    # product data contains files and json data
+        files = request.files.getlist('file')  # gets all the files from the data that have a key of 'file'
+        product_data = request.form.get('product_data')  # gets data saved under the key 'product_data'
+        if product_data and len(files) > 0:
+            data = json.loads(product_data)
+            # Ensure that all required data is present, including discount
+            required_fields = ["name", "description", "category_id", "purchase_price", "selling_price", "features", "discount"]
+            if all(item in data for item in required_fields):
+                product = Product.query.filter_by(name=data.get("name")).first()
                 if product:
-                    return make_response({"msg":"Product already exists"},400)
-                # if product does not exist, proceed to ensure that the images data is in the correct format and proceed to upload the images and generate image urls
-                # the files data is an array containing images...proceed to post the images and append them in an array
-                images=[]
-                for file in files:
-                    if file.filename!='' and allowed_file(file.filename):
-                        result=cloudinary.uploader.upload(file)
-                        images.append(result.get("url"))#populates the images array with the generated url
+                    return make_response({"msg": "Product already exists"}, 400)
 
-                # proceed to create the product
-                purchase_price=float(data.get("purchase_price"))
-                selling_price=float(data.get("selling_price"))
-                tax_id=data.get("tax_id")
-                tax=Tax.query.filter_by(id=tax_id).first()
+                # Ensure the discount field is valid
+                discount = float(data.get("discount"))
+                if discount < 0 or discount > 100:
+                    return make_response({"msg": "Discount must be between 0 and 100"}, 400)
+
+                # Process and upload images
+                images = []
+                for file in files:
+                    if file.filename != '' and allowed_file(file.filename):
+                        result = cloudinary.uploader.upload(file)
+                        images.append(result.get("url"))  # populates the images array with the generated URL
+
+                # Calculate prices excluding tax
+                purchase_price = float(data.get("purchase_price"))
+                selling_price = float(data.get("selling_price"))
+                tax_id = data.get("tax_id")
+                tax = Tax.query.filter_by(id=tax_id).first()
                 if not tax:
-                    purchase_price_excl_tax=purchase_price
-                    selling_price_excl_tax=selling_price
+                    purchase_price_excl_tax = purchase_price
+                    selling_price_excl_tax = selling_price
                 else:
-                    rate=1+(tax.value)/100
-                    purchase_price_excl_tax=round(purchase_price/rate,2)
-                    selling_price_excl_tax=round(selling_price/rate,2)
-                new_product=Product(name=data.get("name"),description=data.get("description"),category_id=data.get("category_id"),purchase_price=purchase_price,
-                                    selling_price=selling_price,purchase_price_excl_tax=purchase_price_excl_tax,
-                                    selling_price_excl_tax=selling_price_excl_tax,quantity=data.get("quantity",0),added_by=get_jwt_identity(),
-                                    tax_id=data.get("tax_id",None),date_added=datetime.datetime.now())
+                    rate = 1 + (tax.value) / 100
+                    purchase_price_excl_tax = round(purchase_price / rate, 2)
+                    selling_price_excl_tax = round(selling_price / rate, 2)
+
+                # Create the new product
+                new_product = Product(
+                    name=data.get("name"),
+                    description=data.get("description"),
+                    category_id=data.get("category_id"),
+                    purchase_price=purchase_price,
+                    selling_price=selling_price,
+                    purchase_price_excl_tax=purchase_price_excl_tax,
+                    selling_price_excl_tax=selling_price_excl_tax,
+                    discount=discount,  # Add the discount here
+                    quantity=data.get("quantity", 0),
+                    added_by=get_jwt_identity(),
+                    tax_id=data.get("tax_id", None),
+                    date_added=datetime.datetime.now()
+                )
                 db.session.add(new_product)
                 db.session.commit()
-                #loop through the images array to post each image and associate it with the newly added product
+
+                # Save images
                 for image in images:
-                    new_image=Images(image_url=image,product_id=new_product.id)
+                    new_image = Images(image_url=image, product_id=new_product.id)
                     db.session.add(new_image)
                     db.session.commit()
-                features=data.get("features") #an array of product features
-                #loop through the features array and add each feature, associating it with the newly added product
+
+                # Save features
+                features = data.get("features")  # an array of product features
                 for feature in features:
-                    new_feature=Feature(description=feature,product_id=new_product.id)
+                    new_feature = Feature(description=feature, product_id=new_product.id)
                     db.session.add(new_feature)
                     db.session.commit()
-                return make_response(new_product.to_dict(),201)
-            return make_response({"msg":"Required data missing"},400)
-        return make_response({"msg":"Invalid data format"},400)
-api.add_resource(Add_Get_Product,'/products')
+
+                return make_response(new_product.to_dict(), 201)
+            return make_response({"msg": "Required data missing"}, 400)
+        return make_response({"msg": "Invalid data format"}, 400)
+
+api.add_resource(Add_Get_Product, '/products')
+
 
 class Create_Get_categories(Resource):
     def get(self):
